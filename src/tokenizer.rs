@@ -68,7 +68,7 @@ fn parse_string(lex: &mut logos::Lexer<Token>) -> Result<Rc<String>, LexingError
     Ok(Rc::new(result))
 }
 
-#[derive(Logos, Debug, PartialEq, Clone)]
+#[derive(Logos, Debug)]
 #[logos(error = LexingError)]
 pub enum Token {
     #[token("(")]

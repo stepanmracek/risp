@@ -34,11 +34,12 @@ where
             let mut list = vec![];
             loop {
                 let (head, span) = tail.next().ok_or(ParsingError::ExpectedToken)?;
-                if head == Token::RBracket {
-                    break;
-                } else {
-                    let expr = parse_recursive((head, span), tail)?;
-                    list.push(Rc::new(expr));
+                match head {
+                    Token::RBracket => break,
+                    _ => {
+                        let expr = parse_recursive((head, span), tail)?;
+                        list.push(Rc::new(expr));
+                    }
                 }
             }
             Ok(Expr::List(list))
