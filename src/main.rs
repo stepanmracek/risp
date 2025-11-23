@@ -284,4 +284,10 @@ mod test {
             }
         }
     }
+
+    #[test]
+    fn apply() {
+        let ans = run("(apply + (list 1 2 3))");
+        assert!(matches!(ans, Ok((value::Value::Int(6), _))));
+    }
 }

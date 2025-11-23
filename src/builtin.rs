@@ -200,3 +200,13 @@ pub fn map(params: Vec<Value>) -> Result<Value, RuntimeError> {
 
     Ok(Value::List(ans?))
 }
+
+pub fn apply(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [func, params] = params
+        .try_into()
+        .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
+    match params {
+        Value::List(params) => crate::eval::func_call(&func, params),
+        v => Err(RuntimeError::ListExpected(v.clone())),
+    }
+}

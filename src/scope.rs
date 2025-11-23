@@ -29,6 +29,7 @@ impl Scope {
             Value::BuiltIn(BuiltIn::new(builtin::display)),
         );
         frame.insert("map".into(), Value::BuiltIn(BuiltIn::new(builtin::map)));
+        frame.insert("apply".into(), Value::BuiltIn(BuiltIn::new(builtin::apply)));
         frame.insert("pi".into(), Value::Float(PI));
 
         Rc::new(Self {
