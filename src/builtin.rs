@@ -1,0 +1,202 @@
+use std::rc::Rc;
+
+use crate::{eval::RuntimeError, value::Value};
+use itertools::Itertools;
+
+fn values_to_ints(params: Vec<Value>) -> Result<Vec<i64>, RuntimeError> {
+    params
+        .iter()
+        .map(|param| match param {
+            Value::Int(number) => Ok(*number),
+            _ => Err(RuntimeError::NumberExpected(param.clone())),
+        })
+        .collect()
+}
+
+fn values_to_floats(params: Vec<Value>) -> Result<Vec<f64>, RuntimeError> {
+    params
+        .iter()
+        .map(|param| match param {
+            Value::Float(number) => Ok(*number),
+            _ => Err(RuntimeError::NumberExpected(param.clone())),
+        })
+        .collect()
+}
+
+fn values_to_strings(params: Vec<Value>) -> Result<Vec<Rc<String>>, RuntimeError> {
+    params
+        .iter()
+        .map(|param| match param {
+            Value::String(s) => Ok(s.clone()),
+            _ => Err(RuntimeError::NumberExpected(param.clone())),
+        })
+        .collect()
+}
+
+pub fn op_add(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    match params.first() {
+        None => Ok(Value::Int(0)),
+        Some(Value::Int(_)) => Ok(Value::Int(values_to_ints(params)?.into_iter().sum())),
+        Some(Value::Float(_)) => Ok(Value::Float(values_to_floats(params)?.into_iter().sum())),
+        Some(other) => Err(RuntimeError::NumberExpected(other.clone())),
+    }
+}
+
+pub fn op_sub(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    match params.first() {
+        None => Err(RuntimeError::WrongNumberOfAgumentsPassed),
+        Some(Value::Int(_)) => {
+            let ops = values_to_ints(params)?;
+            if ops.len() == 1 {
+                Ok(Value::Int(-ops[0]))
+            } else {
+                let ans = ops.into_iter().reduce(|acc, op| acc - op);
+                Ok(Value::Int(ans.unwrap_or(0)))
+            }
+        }
+        Some(Value::Float(_)) => {
+            let ops = values_to_floats(params)?;
+            if ops.len() == 1 {
+                Ok(Value::Float(-ops[0]))
+            } else {
+                let ans = ops.into_iter().reduce(|acc, op| acc - op);
+                Ok(Value::Float(ans.unwrap_or(0.0)))
+            }
+        }
+        Some(other) => Err(RuntimeError::NumberExpected(other.clone())),
+    }
+}
+
+pub fn op_mul(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    match params.first() {
+        None => Ok(Value::Int(1)),
+        Some(Value::Int(_)) => Ok(Value::Int(values_to_ints(params)?.into_iter().product())),
+        Some(Value::Float(_)) => Ok(Value::Float(
+            values_to_floats(params)?.into_iter().product(),
+        )),
+        Some(other) => Err(RuntimeError::NumberExpected(other.clone())),
+    }
+}
+
+pub fn op_div(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    match params.first() {
+        None => Err(RuntimeError::WrongNumberOfAgumentsPassed),
+        Some(Value::Int(_)) => {
+            let ops = values_to_ints(params)?;
+            if ops.len() == 1 {
+                let ans = 1i64.checked_div(ops[0]).ok_or(RuntimeError::DivideByZero);
+                Ok(Value::Int(ans?))
+            } else {
+                let first = ops[0];
+                let ans = ops
+                    .into_iter()
+                    .skip(1)
+                    .try_fold(first, |acc, op| acc.checked_div(op))
+                    .ok_or(RuntimeError::DivideByZero)?;
+                Ok(Value::Int(ans))
+            }
+        }
+        Some(Value::Float(_)) => {
+            let ops = values_to_floats(params)?;
+            let first = ops[0];
+            if ops.len() == 1 {
+                if ops[0] == 0.0 {
+                    Err(RuntimeError::DivideByZero)
+                } else {
+                    Ok(Value::Float(1.0 / ops[0]))
+                }
+            } else {
+                let ans = ops
+                    .into_iter()
+                    .skip(1)
+                    .try_fold(
+                        first,
+                        |acc, op| if op != 0.0 { Some(acc / op) } else { None },
+                    )
+                    .ok_or(RuntimeError::DivideByZero)?;
+                Ok(Value::Float(ans))
+            }
+        }
+        Some(other) => Err(RuntimeError::NumberExpected(other.clone())),
+    }
+}
+
+pub fn op_eq(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let ops = values_to_ints(params)?;
+
+    if ops.len() <= 1 {
+        // empty list -> true
+        // identity
+        Ok(Value::Bool(true))
+    } else {
+        let first = ops[0];
+        Ok(Value::Bool(ops.into_iter().all(|v| v == first)))
+    }
+}
+
+pub fn op_leq(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let ops = values_to_ints(params)?;
+
+    if ops.len() <= 1 {
+        // empty list or just one op -> true
+        Ok(Value::Bool(true))
+    } else {
+        let ans = ops.into_iter().tuple_windows().all(|(a, b)| a <= b);
+        Ok(Value::Bool(ans))
+    }
+}
+
+pub fn list(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    Ok(Value::List(params))
+}
+
+pub fn string_concat(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    if params.is_empty() {
+        Err(RuntimeError::WrongNumberOfAgumentsPassed)
+    } else {
+        let args = values_to_strings(params)?;
+        let mut ans = String::new();
+        for s in args.iter() {
+            ans.push_str(s);
+        }
+        Ok(Value::String(Rc::new(ans)))
+    }
+}
+
+pub fn display(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    if params.len() != 1 {
+        Err(RuntimeError::WrongNumberOfAgumentsPassed)
+    } else {
+        println!("{}", params[0]);
+        Ok(Value::Nil)
+    }
+}
+
+fn zip_vecs<T: Clone>(v: &[Vec<T>]) -> Vec<Vec<T>> {
+    let min_len = v.iter().map(|x| x.len()).min().unwrap_or(0);
+    (0..min_len)
+        .map(|i| v.iter().map(|row| row[i].clone()).collect())
+        .collect()
+}
+
+pub fn map(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    if params.len() < 2 {
+        return Err(RuntimeError::WrongNumberOfAgumentsPassed);
+    }
+
+    let mut params = params.into_iter();
+    let func = params.next().unwrap();
+    let lists = params
+        .map(|p| match p {
+            Value::List(l) => Ok(l),
+            v => Err(RuntimeError::ListExpected(v)),
+        })
+        .collect::<Result<Vec<_>, RuntimeError>>()?;
+
+    let ans = zip_vecs(&lists)
+        .into_iter()
+        .map(|zipped_params| crate::eval::func_call(&func, zipped_params))
+        .collect::<Result<Vec<_>, RuntimeError>>();
+
+    Ok(Value::List(ans?))
+}
