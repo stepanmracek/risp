@@ -184,7 +184,7 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
         Expr::List(list) => match list.first() {
             None => Err(RuntimeError::IllFormedExpression),
             Some(head) => {
-                let tail: Vec<Rc<Expr>> = list.iter().skip(1).cloned().collect();
+                let tail = &list[1..];
                 match head.as_ref() {
                     Expr::List(_) => invoke_lambda(head, &tail, scope),
                     Expr::Token(head_token) => match head_token {
