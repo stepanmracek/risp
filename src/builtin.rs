@@ -28,7 +28,7 @@ fn values_to_strings(params: Vec<Value>) -> Result<Vec<Rc<String>>, RuntimeError
         .iter()
         .map(|param| match param {
             Value::String(s) => Ok(s.clone()),
-            _ => Err(RuntimeError::NumberExpected(param.clone())),
+            _ => Err(RuntimeError::StringExpected(param.clone())),
         })
         .collect()
 }
@@ -209,4 +209,26 @@ pub fn apply(params: Vec<Value>) -> Result<Value, RuntimeError> {
         Value::List(params) => crate::eval::func_call(&func, params),
         v => Err(RuntimeError::ListExpected(v.clone())),
     }
+}
+
+pub fn read_file(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    if params.len() != 1 {
+        return Err(RuntimeError::WrongNumberOfAgumentsPassed);
+    }
+    let file_name = &values_to_strings(params)?[0];
+    let content = std::fs::read_to_string(file_name.as_ref()).map_err(|_| RuntimeError::IO)?;
+    Ok(Value::String(Rc::new(content)))
+}
+
+pub fn split_string(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    if params.len() != 1 {
+        return Err(RuntimeError::WrongNumberOfAgumentsPassed);
+    }
+    let string = &values_to_strings(params)?[0];
+
+    let strings: Vec<_> = string
+        .split_ascii_whitespace()
+        .map(|s| Value::String(Rc::new(s.to_string())))
+        .collect();
+    Ok(Value::List(strings))
 }

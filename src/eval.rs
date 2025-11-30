@@ -15,10 +15,12 @@ pub enum RuntimeError {
     ParameterMustBeIdentifier,
     OperatorIsNotProcedure,
     NumberExpected(Value),
+    StringExpected(Value),
     WrongNumberOfAgumentsPassed,
     IdentifierExpected,
     DivideByZero,
     ListExpected(Value),
+    IO,
 }
 
 impl Display for RuntimeError {
@@ -152,11 +154,11 @@ fn define(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> 
 fn invoke_named_function(
     exprs: &[Rc<Expr>],
     scope: &Rc<Scope>,
-    symbol: &String,
+    symbol: &str,
 ) -> Result<Value, RuntimeError> {
-    let params = expr2params(&exprs, scope)?;
-    let func =
-        Scope::get(scope, symbol).ok_or_else(|| RuntimeError::UnboundVariable(symbol.clone()))?;
+    let params = expr2params(exprs, scope)?;
+    let func = Scope::get(scope, symbol)
+        .ok_or_else(|| RuntimeError::UnboundVariable(symbol.to_string()))?;
     func_call(&func, params)
 }
 
@@ -186,20 +188,20 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
             Some(head) => {
                 let tail = &list[1..];
                 match head.as_ref() {
-                    Expr::List(_) => invoke_lambda(head, &tail, scope),
+                    Expr::List(_) => invoke_lambda(head, tail, scope),
                     Expr::Token(head_token) => match head_token {
                         // list of commands - evaluate all and return last one
-                        Token::Begin => begin(&tail, scope),
+                        Token::Begin => begin(tail, scope),
                         // if (cond) (if_true_expr) (else_expr)
-                        Token::If => if_statement(&tail, scope),
+                        Token::If => if_statement(tail, scope),
                         // create custom procedure
-                        Token::Lambda => lambda(&tail, scope),
+                        Token::Lambda => lambda(tail, scope),
                         // set value of variable
-                        Token::Set => define_variable(&tail, scope, true),
+                        Token::Set => define_variable(tail, scope, true),
                         // create new variable
-                        Token::Define => define(&tail, scope),
+                        Token::Define => define(tail, scope),
                         // invoke procedure or built-in function
-                        Token::Symbol(symbol) => invoke_named_function(&tail, scope, symbol),
+                        Token::Symbol(symbol) => invoke_named_function(tail, scope, symbol),
                         Token::Int(_) | Token::Float(_) | Token::StringLiteral(_) => {
                             Err(RuntimeError::OperatorIsNotProcedure)
                         }
@@ -211,9 +213,4 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
             }
         },
     }
-}
-
-pub fn run(expr: Expr) -> Result<(Value, Rc<Scope>), RuntimeError> {
-    let global_scope = Scope::global();
-    evaluate(&Rc::new(expr), &global_scope).map(|val| (val, global_scope))
 }

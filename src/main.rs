@@ -24,9 +24,9 @@ impl std::fmt::Display for Error {
 }
 
 fn eval(src: &str, scope: &Rc<scope::Scope>) -> Result<value::Value, Error> {
-    let tokens = tokenizer::tokenize(src).map_err(|e| Error::Lexing(e))?;
-    let expr = parser::parse(tokens.into_iter()).map_err(|e| Error::Parsing(e))?;
-    eval::evaluate(&Rc::new(expr), scope).map_err(|e| Error::Runtime(e))
+    let tokens = tokenizer::tokenize(src).map_err(Error::Lexing)?;
+    let expr = parser::parse(tokens.into_iter()).map_err(Error::Parsing)?;
+    eval::evaluate(&Rc::new(expr), scope).map_err(Error::Runtime)
 }
 
 fn interactive_shell(scope: &Rc<scope::Scope>) {
@@ -36,7 +36,7 @@ fn interactive_shell(scope: &Rc<scope::Scope>) {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(&line).unwrap();
-                let ans = eval(&line, &scope);
+                let ans = eval(&line, scope);
                 match ans {
                     Err(e) => println!("ERROR: {}", e),
                     Ok(value::Value::Nil) => {}
@@ -79,9 +79,9 @@ mod test {
     use super::*;
 
     fn run(src: &str) -> Result<(value::Value, Rc<scope::Scope>), Error> {
-        let tokens = tokenizer::tokenize(src).map_err(|e| Error::Lexing(e))?;
-        let expr = parser::parse(tokens.into_iter()).map_err(|e| Error::Parsing(e))?;
-        eval::run(expr).map_err(|e| Error::Runtime(e))
+        let global_scope = crate::scope::Scope::global();
+        let ans = eval(src, &global_scope)?;
+        Ok((ans, global_scope))
     }
 
     #[test]

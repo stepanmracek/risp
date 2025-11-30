@@ -14,7 +14,7 @@ fn add_procedure(name: &str, param_names: Vec<String>, src: &str, scope: &Rc<Sco
     let tokens = tokenizer::tokenize(src).unwrap();
     let body = Rc::new(parser::parse(tokens.into_iter()).unwrap());
     let procedure = Value::Procedure(Procedure::new(param_names, body, scope.clone()));
-    Scope::define(&scope, name, procedure);
+    Scope::define(scope, name, procedure);
 }
 
 impl Scope {
@@ -37,6 +37,14 @@ impl Scope {
         );
         frame.insert("map".into(), Value::BuiltIn(BuiltIn::new(builtin::map)));
         frame.insert("apply".into(), Value::BuiltIn(BuiltIn::new(builtin::apply)));
+        frame.insert(
+            "read-file".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::read_file)),
+        );
+        frame.insert(
+            "split-string".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::split_string)),
+        );
         frame.insert("pi".into(), Value::Float(PI));
 
         let scope = Rc::new(Self {
