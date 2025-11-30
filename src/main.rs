@@ -247,10 +247,12 @@ mod test {
 
     #[test]
     fn string_operations() {
-        let src = "(string-concatenate \"foo\" \"-\" \"bar\")";
+        let src = "(apply string-concatenate (split-string (read-file \"fixtures/hello\")))";
         let ans = run(src);
         match ans {
-            Ok((value::Value::String(ans), _)) => assert_eq!(ans, Rc::new("foo-bar".to_string())),
+            Ok((value::Value::String(ans), _)) => {
+                assert_eq!(ans, Rc::new("helloworld".to_string()))
+            }
             _ => panic!(),
         }
     }
