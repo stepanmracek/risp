@@ -290,4 +290,21 @@ mod test {
         let ans = run("(apply + (list 1 2 3))");
         assert!(matches!(ans, Ok((value::Value::Int(6), _))));
     }
+
+    #[test]
+    fn generator() {
+        let ans = run("(begin
+            (define next (make-generator 10 -3))
+            (list (next) (next) (next))
+        )")
+        .unwrap()
+        .0;
+        match ans {
+            value::Value::List(values) => {
+                let ints = values_to_ints(values);
+                assert_eq!(ints, vec![10, 7, 4])
+            }
+            _ => panic!(),
+        }
+    }
 }

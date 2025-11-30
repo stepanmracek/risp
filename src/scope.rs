@@ -1,6 +1,6 @@
 use crate::{
-    builtin,
-    value::{BuiltIn, Value},
+    builtin, parser, tokenizer,
+    value::{BuiltIn, Procedure, Value},
 };
 use std::{cell::RefCell, collections::HashMap, f64::consts::PI, rc::Rc};
 
@@ -8,6 +8,13 @@ use std::{cell::RefCell, collections::HashMap, f64::consts::PI, rc::Rc};
 pub struct Scope {
     frame: Rc<RefCell<HashMap<String, Value>>>,
     outer: Option<Rc<Scope>>,
+}
+
+fn add_procedure(name: &str, param_names: Vec<String>, src: &str, scope: &Rc<Scope>) {
+    let tokens = tokenizer::tokenize(src).unwrap();
+    let body = Rc::new(parser::parse(tokens.into_iter()).unwrap());
+    let procedure = Value::Procedure(Procedure::new(param_names, body, scope.clone()));
+    Scope::define(&scope, name, procedure);
 }
 
 impl Scope {
@@ -32,10 +39,25 @@ impl Scope {
         frame.insert("apply".into(), Value::BuiltIn(BuiltIn::new(builtin::apply)));
         frame.insert("pi".into(), Value::Float(PI));
 
-        Rc::new(Self {
+        let scope = Rc::new(Self {
             frame: Rc::new(RefCell::new(frame)),
             outer: None,
-        })
+        });
+
+        let src = "
+        (begin (define val start) (lambda ()
+            (begin
+                (define result val)
+                (set! val (+ val step))
+                result)))";
+        add_procedure(
+            "make-generator",
+            vec!["start".to_string(), "step".to_string()],
+            src,
+            &scope,
+        );
+
+        scope
     }
 
     pub fn nest(parent: &Rc<Self>) -> Rc<Self> {
