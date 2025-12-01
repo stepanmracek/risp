@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::{eval::RuntimeError, value::Value};
 use itertools::Itertools;
 
-fn values_to_ints(params: Vec<Value>) -> Result<Vec<i64>, RuntimeError> {
+fn values_to_ints(params: &[Value]) -> Result<Vec<i64>, RuntimeError> {
     params
         .iter()
         .map(|param| match param {
@@ -13,7 +13,7 @@ fn values_to_ints(params: Vec<Value>) -> Result<Vec<i64>, RuntimeError> {
         .collect()
 }
 
-fn values_to_floats(params: Vec<Value>) -> Result<Vec<f64>, RuntimeError> {
+fn values_to_floats(params: &[Value]) -> Result<Vec<f64>, RuntimeError> {
     params
         .iter()
         .map(|param| match param {
@@ -23,7 +23,7 @@ fn values_to_floats(params: Vec<Value>) -> Result<Vec<f64>, RuntimeError> {
         .collect()
 }
 
-fn values_to_strings(params: Vec<Value>) -> Result<Vec<Rc<String>>, RuntimeError> {
+fn values_to_strings(params: &[Value]) -> Result<Vec<Rc<String>>, RuntimeError> {
     params
         .iter()
         .map(|param| match param {
@@ -36,8 +36,8 @@ fn values_to_strings(params: Vec<Value>) -> Result<Vec<Rc<String>>, RuntimeError
 pub fn op_add(params: Vec<Value>) -> Result<Value, RuntimeError> {
     match params.first() {
         None => Ok(Value::Int(0)),
-        Some(Value::Int(_)) => Ok(Value::Int(values_to_ints(params)?.into_iter().sum())),
-        Some(Value::Float(_)) => Ok(Value::Float(values_to_floats(params)?.into_iter().sum())),
+        Some(Value::Int(_)) => Ok(Value::Int(values_to_ints(&params)?.into_iter().sum())),
+        Some(Value::Float(_)) => Ok(Value::Float(values_to_floats(&params)?.into_iter().sum())),
         Some(other) => Err(RuntimeError::NumberExpected(other.clone())),
     }
 }
@@ -46,7 +46,7 @@ pub fn op_sub(params: Vec<Value>) -> Result<Value, RuntimeError> {
     match params.first() {
         None => Err(RuntimeError::WrongNumberOfAgumentsPassed),
         Some(Value::Int(_)) => {
-            let ops = values_to_ints(params)?;
+            let ops = values_to_ints(&params)?;
             if ops.len() == 1 {
                 Ok(Value::Int(-ops[0]))
             } else {
@@ -55,7 +55,7 @@ pub fn op_sub(params: Vec<Value>) -> Result<Value, RuntimeError> {
             }
         }
         Some(Value::Float(_)) => {
-            let ops = values_to_floats(params)?;
+            let ops = values_to_floats(&params)?;
             if ops.len() == 1 {
                 Ok(Value::Float(-ops[0]))
             } else {
@@ -70,9 +70,9 @@ pub fn op_sub(params: Vec<Value>) -> Result<Value, RuntimeError> {
 pub fn op_mul(params: Vec<Value>) -> Result<Value, RuntimeError> {
     match params.first() {
         None => Ok(Value::Int(1)),
-        Some(Value::Int(_)) => Ok(Value::Int(values_to_ints(params)?.into_iter().product())),
+        Some(Value::Int(_)) => Ok(Value::Int(values_to_ints(&params)?.into_iter().product())),
         Some(Value::Float(_)) => Ok(Value::Float(
-            values_to_floats(params)?.into_iter().product(),
+            values_to_floats(&params)?.into_iter().product(),
         )),
         Some(other) => Err(RuntimeError::NumberExpected(other.clone())),
     }
@@ -82,7 +82,7 @@ pub fn op_div(params: Vec<Value>) -> Result<Value, RuntimeError> {
     match params.first() {
         None => Err(RuntimeError::WrongNumberOfAgumentsPassed),
         Some(Value::Int(_)) => {
-            let ops = values_to_ints(params)?;
+            let ops = values_to_ints(&params)?;
             if ops.len() == 1 {
                 let ans = 1i64.checked_div(ops[0]).ok_or(RuntimeError::DivideByZero);
                 Ok(Value::Int(ans?))
@@ -97,7 +97,7 @@ pub fn op_div(params: Vec<Value>) -> Result<Value, RuntimeError> {
             }
         }
         Some(Value::Float(_)) => {
-            let ops = values_to_floats(params)?;
+            let ops = values_to_floats(&params)?;
             let first = ops[0];
             if ops.len() == 1 {
                 if ops[0] == 0.0 {
@@ -122,7 +122,7 @@ pub fn op_div(params: Vec<Value>) -> Result<Value, RuntimeError> {
 }
 
 pub fn modulo(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    let [a, b] = values_to_ints(params)?
+    let [a, b] = values_to_ints(&params)?
         .try_into()
         .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
     if b == 0 {
@@ -133,7 +133,7 @@ pub fn modulo(params: Vec<Value>) -> Result<Value, RuntimeError> {
 }
 
 pub fn op_eq(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    let ops = values_to_ints(params)?;
+    let ops = values_to_ints(&params)?;
 
     if ops.len() <= 1 {
         // empty list -> true
@@ -146,7 +146,7 @@ pub fn op_eq(params: Vec<Value>) -> Result<Value, RuntimeError> {
 }
 
 pub fn op_leq(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    let ops = values_to_ints(params)?;
+    let ops = values_to_ints(&params)?;
 
     if ops.len() <= 1 {
         // empty list or just one op -> true
@@ -165,7 +165,7 @@ pub fn string_concat(params: Vec<Value>) -> Result<Value, RuntimeError> {
     if params.is_empty() {
         Err(RuntimeError::WrongNumberOfAgumentsPassed)
     } else {
-        let args = values_to_strings(params)?;
+        let args = values_to_strings(&params)?;
         let mut ans = String::new();
         for s in args.iter() {
             ans.push_str(s);
@@ -226,7 +226,7 @@ pub fn read_file(params: Vec<Value>) -> Result<Value, RuntimeError> {
     if params.len() != 1 {
         return Err(RuntimeError::WrongNumberOfAgumentsPassed);
     }
-    let file_name = &values_to_strings(params)?[0];
+    let file_name = &values_to_strings(&params)?[0];
     let content = std::fs::read_to_string(file_name.as_ref()).map_err(|_| RuntimeError::IO)?;
     Ok(Value::String(Rc::new(content)))
 }
@@ -235,11 +235,36 @@ pub fn split_string(params: Vec<Value>) -> Result<Value, RuntimeError> {
     if params.len() != 1 {
         return Err(RuntimeError::WrongNumberOfAgumentsPassed);
     }
-    let string = &values_to_strings(params)?[0];
+    let string = &values_to_strings(&params)?[0];
 
     let strings: Vec<_> = string
         .split_ascii_whitespace()
         .map(|s| Value::String(Rc::new(s.to_string())))
         .collect();
     Ok(Value::List(strings))
+}
+
+pub fn substring(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let string = values_to_strings(&params[..1])?
+        .get(0)
+        .ok_or(RuntimeError::WrongNumberOfAgumentsPassed)?
+        .clone();
+    let [start, end] = values_to_ints(&params[1..])?
+        .try_into()
+        .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
+
+    let start = if start < 0 {
+        string.len() - start.abs() as usize + 1
+    } else {
+        start as usize
+    };
+
+    let end = if end < 0 {
+        string.len() - end.abs() as usize + 1
+    } else {
+        end as usize
+    };
+
+    let substring = &string[start..end];
+    Ok(Value::String(Rc::new(substring.to_string())))
 }

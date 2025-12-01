@@ -264,11 +264,16 @@ mod test {
 
     #[test]
     fn string_operations() {
-        let src = "(apply string-concatenate (split-string (read-file \"fixtures/hello\")))";
+        let src = "
+            (substring
+                (apply string-concatenate
+                    (split-string
+                        (read-file \"fixtures/hello\")))
+            5 -1)";
         let ans = run(src);
         match ans {
             Ok((value::Value::String(ans), _)) => {
-                assert_eq!(ans, Rc::new("helloworld".to_string()))
+                assert_eq!(ans, Rc::new("world".to_string()))
             }
             _ => panic!(),
         }

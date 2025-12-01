@@ -46,6 +46,10 @@ impl Scope {
             "split-string".into(),
             Value::BuiltIn(BuiltIn::new(builtin::split_string)),
         );
+        frame.insert(
+            "substring".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::substring)),
+        );
         frame.insert("pi".into(), Value::Float(PI));
 
         let scope = Rc::new(Self {
