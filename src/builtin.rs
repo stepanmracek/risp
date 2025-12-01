@@ -268,3 +268,12 @@ pub fn substring(params: Vec<Value>) -> Result<Value, RuntimeError> {
     let substring = &string[start..end];
     Ok(Value::String(Rc::new(substring.to_string())))
 }
+
+pub fn parse_int(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [string] = values_to_strings(&params)?
+        .try_into()
+        .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
+
+    let int = string.parse::<i64>().ok().unwrap_or_default();
+    Ok(Value::Int(int))
+}

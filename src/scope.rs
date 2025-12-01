@@ -50,6 +50,10 @@ impl Scope {
             "substring".into(),
             Value::BuiltIn(BuiltIn::new(builtin::substring)),
         );
+        frame.insert(
+            "parse-int".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::parse_int)),
+        );
         frame.insert("pi".into(), Value::Float(PI));
 
         let scope = Rc::new(Self {
