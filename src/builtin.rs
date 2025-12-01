@@ -133,7 +133,7 @@ pub fn modulo(params: Vec<Value>) -> Result<Value, RuntimeError> {
 }
 
 pub fn op_eq(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    if params.len() == 0 {
+    if params.is_empty() {
         Ok(Value::Bool(true))
     } else if let Ok(ops) = values_to_ints(&params) {
         let first = ops[0];
@@ -247,7 +247,7 @@ pub fn split_string(params: Vec<Value>) -> Result<Value, RuntimeError> {
 
 pub fn substring(params: Vec<Value>) -> Result<Value, RuntimeError> {
     let string = values_to_strings(&params[..1])?
-        .get(0)
+        .first()
         .ok_or(RuntimeError::WrongNumberOfAgumentsPassed)?
         .clone();
     let [start, end] = values_to_ints(&params[1..])?
@@ -255,13 +255,13 @@ pub fn substring(params: Vec<Value>) -> Result<Value, RuntimeError> {
         .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
 
     let start = if start < 0 {
-        string.len() - start.abs() as usize + 1
+        string.len() - start.unsigned_abs() as usize + 1
     } else {
         start as usize
     };
 
     let end = if end < 0 {
-        string.len() - end.abs() as usize + 1
+        string.len() - end.unsigned_abs() as usize + 1
     } else {
         end as usize
     };
