@@ -24,6 +24,7 @@ impl Scope {
         frame.insert("-".into(), Value::BuiltIn(BuiltIn::new(builtin::op_sub)));
         frame.insert("*".into(), Value::BuiltIn(BuiltIn::new(builtin::op_mul)));
         frame.insert("/".into(), Value::BuiltIn(BuiltIn::new(builtin::op_div)));
+        frame.insert("mod".into(), Value::BuiltIn(BuiltIn::new(builtin::modulo)));
         frame.insert("=".into(), Value::BuiltIn(BuiltIn::new(builtin::op_eq)));
         frame.insert("<=".into(), Value::BuiltIn(BuiltIn::new(builtin::op_leq)));
         frame.insert("list".into(), Value::BuiltIn(BuiltIn::new(builtin::list)));

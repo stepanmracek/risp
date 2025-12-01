@@ -246,6 +246,23 @@ mod test {
     }
 
     #[test]
+    fn modulo() {
+        let examples = [
+            ("(mod 95 100)", 95),
+            ("(mod 195 100)", 95),
+            ("(mod -5 100)", 95),
+        ];
+
+        for (src, expected) in examples {
+            let ans = run(src).unwrap().0;
+            match ans {
+                value::Value::Int(ans) => assert_eq!(ans, expected, "{}", src),
+                _ => panic!(),
+            }
+        }
+    }
+
+    #[test]
     fn string_operations() {
         let src = "(apply string-concatenate (split-string (read-file \"fixtures/hello\")))";
         let ans = run(src);

@@ -121,6 +121,17 @@ pub fn op_div(params: Vec<Value>) -> Result<Value, RuntimeError> {
     }
 }
 
+pub fn modulo(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [a, b] = values_to_ints(params)?
+        .try_into()
+        .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
+    if b == 0 {
+        Err(RuntimeError::DivideByZero)
+    } else {
+        Ok(Value::Int((a + b) % b))
+    }
+}
+
 pub fn op_eq(params: Vec<Value>) -> Result<Value, RuntimeError> {
     let ops = values_to_ints(params)?;
 
