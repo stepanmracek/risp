@@ -133,15 +133,16 @@ pub fn modulo(params: Vec<Value>) -> Result<Value, RuntimeError> {
 }
 
 pub fn op_eq(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    let ops = values_to_ints(&params)?;
-
-    if ops.len() <= 1 {
-        // empty list -> true
-        // identity
+    if params.len() == 0 {
         Ok(Value::Bool(true))
-    } else {
+    } else if let Ok(ops) = values_to_ints(&params) {
         let first = ops[0];
         Ok(Value::Bool(ops.into_iter().all(|v| v == first)))
+    } else if let Ok(ops) = values_to_strings(&params) {
+        let first = &ops[0];
+        Ok(Value::Bool(ops.iter().all(|v| v == first)))
+    } else {
+        Err(RuntimeError::NumberExpected(params[0].clone()))
     }
 }
 

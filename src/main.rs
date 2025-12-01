@@ -279,6 +279,20 @@ mod test {
         }
     }
 
+    #[test]
+    fn string_eq() {
+        let src = "(list (= \"a\" \"b\") (= \"a\" \"a\") (= \"a\"))";
+        let ans = run(src);
+        match ans {
+            Ok((value::Value::List(list), _)) => {
+                assert!(matches!(list[0], value::Value::Bool(false)));
+                assert!(matches!(list[1], value::Value::Bool(true)));
+                assert!(matches!(list[1], value::Value::Bool(true)));
+            }
+            _ => panic!(),
+        }
+    }
+
     fn values_to_ints(params: Vec<value::Value>) -> Vec<i64> {
         params
             .iter()
