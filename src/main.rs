@@ -351,4 +351,24 @@ mod test {
         let ans = run("(and #t (or #f #t) (not #f))");
         assert!(matches!(ans, Ok((value::Value::Bool(true), _))));
     }
+
+    #[test]
+    fn int_comparators() {
+        let examples = [
+            ("(>)", true),
+            ("(>= 1)", true),
+            ("(<= 1 1 2)", true),
+            ("(< 1 1 2)", false),
+            ("(> 6 6)", false),
+            ("(>= 6 6)", true),
+        ];
+
+        for (src, expected) in examples {
+            let ans = run(src).unwrap().0;
+            match ans {
+                value::Value::Bool(ans) => assert_eq!(ans, expected, "{}", src),
+                _ => panic!(),
+            }
+        }
+    }
 }

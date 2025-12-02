@@ -32,25 +32,25 @@ impl Scope {
         frame.insert(
             "<=".into(),
             Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(params, |(a, b)| a <= b)
+                builtin::pairwise_compare(&params, |(a, b)| a <= b)
             })),
         );
         frame.insert(
             "<".into(),
             Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(params, |(a, b)| a < b)
+                builtin::pairwise_compare(&params, |(a, b)| a < b)
             })),
         );
         frame.insert(
             ">=".into(),
             Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(params, |(a, b)| a >= b)
+                builtin::pairwise_compare(&params, |(a, b)| a >= b)
             })),
         );
         frame.insert(
             ">".into(),
             Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(params, |(a, b)| a > b)
+                builtin::pairwise_compare(&params, |(a, b)| a > b)
             })),
         );
         frame.insert("list".into(), Value::BuiltIn(BuiltIn::new(builtin::list)));

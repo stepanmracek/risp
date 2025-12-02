@@ -156,18 +156,13 @@ pub fn op_eq(params: Vec<Value>) -> Result<Value, RuntimeError> {
     }
 }
 
-pub fn pairwise_compare<F>(params: Vec<Value>, cmp: F) -> Result<Value, RuntimeError>
-where
-    F: Fn((i64, i64)) -> bool,
-{
+pub fn pairwise_compare(
+    params: &[Value],
+    cmp: fn((i64, i64)) -> bool,
+) -> Result<Value, RuntimeError> {
     let ops = values_to_ints(&params)?;
-    if ops.len() <= 1 {
-        // empty list or just one op -> true
-        Ok(Value::Bool(true))
-    } else {
-        let ans = ops.into_iter().tuple_windows().all(cmp);
-        Ok(Value::Bool(ans))
-    }
+    let ans = ops.into_iter().tuple_windows().all(cmp);
+    Ok(Value::Bool(ans))
 }
 
 pub fn list(params: Vec<Value>) -> Result<Value, RuntimeError> {
