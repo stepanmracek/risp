@@ -104,6 +104,8 @@ pub enum Token {
     Float(f64),
     #[regex("#[tf]", parse_bool)]
     Bool(bool),
+    #[regex(r";[^\n]*", logos::skip)]
+    Comment,
     #[regex(r"[ \t\n\f]+", logos::skip)]
     WhiteSpace,
 }

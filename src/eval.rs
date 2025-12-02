@@ -209,8 +209,10 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
                         | Token::StringLiteral(_)
                         | Token::Bool(_) => Err(RuntimeError::OperatorIsNotProcedure),
                         // Following case should not happen because brackets are converted to nested lists
-                        // and whitespace is ignored in tokenizer
-                        Token::LBracket | Token::RBracket | Token::WhiteSpace => panic!(),
+                        // and whitespace and comments are ignored in tokenizer
+                        Token::LBracket | Token::RBracket | Token::WhiteSpace | Token::Comment => {
+                            panic!()
+                        }
                     },
                 }
             }
