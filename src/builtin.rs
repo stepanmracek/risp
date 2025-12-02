@@ -33,6 +33,16 @@ fn values_to_strings(params: &[Value]) -> Result<Vec<Rc<String>>, RuntimeError> 
         .collect()
 }
 
+fn values_to_bool(params: &[Value]) -> Result<Vec<bool>, RuntimeError> {
+    params
+        .iter()
+        .map(|param| match param {
+            Value::Bool(b) => Ok(*b),
+            _ => Err(RuntimeError::BooleanExpected(param.clone())),
+        })
+        .collect()
+}
+
 pub fn op_add(params: Vec<Value>) -> Result<Value, RuntimeError> {
     match params.first() {
         None => Ok(Value::Int(0)),
@@ -277,4 +287,21 @@ pub fn parse_int(params: Vec<Value>) -> Result<Value, RuntimeError> {
 
     let int = string.parse::<i64>().ok().unwrap_or_default();
     Ok(Value::Int(int))
+}
+
+pub fn and(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let params = values_to_bool(&params)?;
+    Ok(Value::Bool(params.into_iter().all(|v| v)))
+}
+
+pub fn or(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let params = values_to_bool(&params)?;
+    Ok(Value::Bool(params.into_iter().any(|v| v)))
+}
+
+pub fn not(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [param] = values_to_bool(&params)?
+        .try_into()
+        .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
+    Ok(Value::Bool(!param))
 }

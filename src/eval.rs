@@ -16,6 +16,7 @@ pub enum RuntimeError {
     OperatorIsNotProcedure,
     NumberExpected(Value),
     StringExpected(Value),
+    BooleanExpected(Value),
     WrongNumberOfAgumentsPassed,
     IdentifierExpected,
     DivideByZero,
@@ -181,6 +182,7 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
             Token::Int(i) => Ok(Value::Int(*i)),
             Token::Float(f) => Ok(Value::Float(*f)),
             Token::StringLiteral(s) => Ok(Value::String(s.clone())),
+            Token::Bool(b) => Ok(Value::Bool(*b)),
             _ => todo!(),
         },
         Expr::List(list) => match list.first() {
@@ -202,9 +204,10 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
                         Token::Define => define(tail, scope),
                         // invoke procedure or built-in function
                         Token::Symbol(symbol) => invoke_named_function(tail, scope, symbol),
-                        Token::Int(_) | Token::Float(_) | Token::StringLiteral(_) => {
-                            Err(RuntimeError::OperatorIsNotProcedure)
-                        }
+                        Token::Int(_)
+                        | Token::Float(_)
+                        | Token::StringLiteral(_)
+                        | Token::Bool(_) => Err(RuntimeError::OperatorIsNotProcedure),
                         // Following case should not happen because brackets are converted to nested lists
                         // and whitespace is ignored in tokenizer
                         Token::LBracket | Token::RBracket | Token::WhiteSpace => panic!(),

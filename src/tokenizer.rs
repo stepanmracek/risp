@@ -68,6 +68,15 @@ fn parse_string(lex: &mut logos::Lexer<Token>) -> Result<Rc<String>, LexingError
     Ok(Rc::new(result))
 }
 
+fn parse_bool(lex: &mut logos::Lexer<Token>) -> Result<bool, LexingError> {
+    let slice = lex.slice();
+    match slice {
+        "#t" => Ok(true),
+        "#f" => Ok(false),
+        _ => Err(LexingError::Other),
+    }
+}
+
 #[derive(Logos, Debug)]
 #[logos(error = LexingError)]
 pub enum Token {
@@ -93,6 +102,8 @@ pub enum Token {
     Int(i64),
     #[regex("-?([0-9]+[.]([0-9]*)?|[.][0-9]+)", |lex| lex.slice().parse())]
     Float(f64),
+    #[regex("#[tf]", parse_bool)]
+    Bool(bool),
     #[regex(r"[ \t\n\f]+", logos::skip)]
     WhiteSpace,
 }

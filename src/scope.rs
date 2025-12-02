@@ -24,6 +24,9 @@ impl Scope {
         frame.insert("-".into(), Value::BuiltIn(BuiltIn::new(builtin::op_sub)));
         frame.insert("*".into(), Value::BuiltIn(BuiltIn::new(builtin::op_mul)));
         frame.insert("/".into(), Value::BuiltIn(BuiltIn::new(builtin::op_div)));
+        frame.insert("and".into(), Value::BuiltIn(BuiltIn::new(builtin::and)));
+        frame.insert("or".into(), Value::BuiltIn(BuiltIn::new(builtin::or)));
+        frame.insert("not".into(), Value::BuiltIn(BuiltIn::new(builtin::not)));
         frame.insert("mod".into(), Value::BuiltIn(BuiltIn::new(builtin::modulo)));
         frame.insert("=".into(), Value::BuiltIn(BuiltIn::new(builtin::op_eq)));
         frame.insert("<=".into(), Value::BuiltIn(BuiltIn::new(builtin::op_leq)));

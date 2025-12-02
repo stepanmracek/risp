@@ -345,4 +345,10 @@ mod test {
             _ => panic!(),
         }
     }
+
+    #[test]
+    fn bool() {
+        let ans = run("(and #t (or #f #t) (not #f))");
+        assert!(matches!(ans, Ok((value::Value::Bool(true), _))));
+    }
 }
