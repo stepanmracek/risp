@@ -29,7 +29,30 @@ impl Scope {
         frame.insert("not".into(), Value::BuiltIn(BuiltIn::new(builtin::not)));
         frame.insert("mod".into(), Value::BuiltIn(BuiltIn::new(builtin::modulo)));
         frame.insert("=".into(), Value::BuiltIn(BuiltIn::new(builtin::op_eq)));
-        frame.insert("<=".into(), Value::BuiltIn(BuiltIn::new(builtin::op_leq)));
+        frame.insert(
+            "<=".into(),
+            Value::BuiltIn(BuiltIn::new(|params| {
+                builtin::pairwise_compare(params, |(a, b)| a <= b)
+            })),
+        );
+        frame.insert(
+            "<".into(),
+            Value::BuiltIn(BuiltIn::new(|params| {
+                builtin::pairwise_compare(params, |(a, b)| a < b)
+            })),
+        );
+        frame.insert(
+            ">=".into(),
+            Value::BuiltIn(BuiltIn::new(|params| {
+                builtin::pairwise_compare(params, |(a, b)| a >= b)
+            })),
+        );
+        frame.insert(
+            ">".into(),
+            Value::BuiltIn(BuiltIn::new(|params| {
+                builtin::pairwise_compare(params, |(a, b)| a > b)
+            })),
+        );
         frame.insert("list".into(), Value::BuiltIn(BuiltIn::new(builtin::list)));
         frame.insert(
             "string-concatenate".into(),
