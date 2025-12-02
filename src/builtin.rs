@@ -170,10 +170,6 @@ where
     }
 }
 
-pub fn op_leq(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    pairwise_compare(params, |(a, b)| a <= b)
-}
-
 pub fn list(params: Vec<Value>) -> Result<Value, RuntimeError> {
     Ok(Value::List(params))
 }
