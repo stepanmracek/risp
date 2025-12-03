@@ -73,12 +73,24 @@ impl Scope {
             Value::BuiltIn(BuiltIn::new(builtin::split_string)),
         );
         frame.insert(
+            "split-string-with".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::split_string_with)),
+        );
+        frame.insert(
             "substring".into(),
             Value::BuiltIn(BuiltIn::new(builtin::substring)),
         );
         frame.insert(
-            "parse-int".into(),
+            "string->int".into(),
             Value::BuiltIn(BuiltIn::new(builtin::parse_int)),
+        );
+        frame.insert(
+            "->string".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::to_string)),
+        );
+        frame.insert(
+            "length".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::length)),
         );
         frame.insert("pi".into(), Value::Float(PI));
 

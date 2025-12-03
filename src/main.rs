@@ -264,17 +264,24 @@ mod test {
 
     #[test]
     fn string_operations() {
-        let src = "
-            (parse-int
-                (substring
-                    (apply string-concatenate
-                        (split-string
-                            (read-file \"fixtures/hello\")))
-                5 -1)
-            )";
+        let src = r#"
+            (length
+                (->string
+                    (string->int
+                        (substring
+                            (apply string-concatenate
+                                (split-string-with
+                                    (read-file "fixtures/hello") ; "hello 123"
+                                    " "
+                                ) ; ("hello" "123")
+                            ) ; "hello123"
+                        5 -1) ; "123"
+                    ) ; 123
+                ) ; "123"
+            ); 3"#;
         let ans = run(src);
         match ans {
-            Ok((value::Value::Int(ans), _)) => assert_eq!(ans, 123),
+            Ok((value::Value::Int(ans), _)) => assert_eq!(ans, 3),
             _ => panic!(),
         }
     }

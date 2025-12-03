@@ -252,6 +252,18 @@ pub fn split_string(params: Vec<Value>) -> Result<Value, RuntimeError> {
     Ok(Value::List(strings))
 }
 
+pub fn split_string_with(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [string, sep] = &values_to_strings(&params)?
+        .try_into()
+        .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
+
+    let strings: Vec<_> = string
+        .split(sep.as_ref())
+        .map(|s| Value::String(Rc::new(s.to_string())))
+        .collect();
+    Ok(Value::List(strings))
+}
+
 pub fn substring(params: Vec<Value>) -> Result<Value, RuntimeError> {
     let string = values_to_strings(&params[..1])?
         .first()
@@ -284,6 +296,34 @@ pub fn parse_int(params: Vec<Value>) -> Result<Value, RuntimeError> {
 
     let int = string.parse::<i64>().ok().unwrap_or_default();
     Ok(Value::Int(int))
+}
+
+pub fn to_string(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    if params.len() != 1 {
+        return Err(RuntimeError::WrongNumberOfAgumentsPassed);
+    }
+
+    let ans = match &params[0] {
+        Value::Bool(b) => format!("{b}"),
+        Value::Int(i) => format!("{i}"),
+        Value::Float(f) => format!("{f}"),
+        Value::String(s) => s.as_ref().clone(),
+        val => return Err(RuntimeError::StringExpected(val.clone())),
+    };
+    Ok(Value::String(Rc::new(ans)))
+}
+
+pub fn length(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    if params.len() != 1 {
+        return Err(RuntimeError::WrongNumberOfAgumentsPassed);
+    }
+
+    let ans = match &params[0] {
+        Value::String(s) => s.len() as i64,
+        Value::List(l) => l.len() as i64,
+        val => return Err(RuntimeError::StringExpected(val.clone())),
+    };
+    Ok(Value::Int(ans))
 }
 
 pub fn and(params: Vec<Value>) -> Result<Value, RuntimeError> {
