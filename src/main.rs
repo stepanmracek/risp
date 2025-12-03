@@ -331,6 +331,26 @@ mod test {
     }
 
     #[test]
+    fn append() {
+        let examples = [
+            ("(append)", vec![]),
+            ("(append (list 1 2))", vec![1, 2]),
+            ("(append (list 1 2) (list) (list 3))", vec![1, 2, 3]),
+        ];
+
+        for (src, expected) in examples {
+            let ans = run(src).unwrap().0;
+            match ans {
+                value::Value::List(ans) => {
+                    let ans = values_to_ints(ans);
+                    assert_eq!(ans, expected, "{}", src)
+                }
+                _ => panic!(),
+            }
+        }
+    }
+
+    #[test]
     fn apply() {
         let ans = run("(apply + (list 1 2 3))");
         assert!(matches!(ans, Ok((value::Value::Int(6), _))));

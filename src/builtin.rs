@@ -169,6 +169,18 @@ pub fn list(params: Vec<Value>) -> Result<Value, RuntimeError> {
     Ok(Value::List(params))
 }
 
+pub fn append(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let vals: Result<Vec<Value>, RuntimeError> = params
+        .into_iter()
+        .map(|p| match p {
+            Value::List(l) => Ok(l),
+            v => Err(RuntimeError::ListExpected(v)),
+        })
+        .flatten_ok()
+        .collect();
+    Ok(Value::List(vals?))
+}
+
 pub fn string_concat(params: Vec<Value>) -> Result<Value, RuntimeError> {
     if params.is_empty() {
         Err(RuntimeError::WrongNumberOfAgumentsPassed)

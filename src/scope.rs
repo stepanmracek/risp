@@ -55,6 +55,10 @@ impl Scope {
         );
         frame.insert("list".into(), Value::BuiltIn(BuiltIn::new(builtin::list)));
         frame.insert(
+            "append".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::append)),
+        );
+        frame.insert(
             "string-concatenate".into(),
             Value::BuiltIn(BuiltIn::new(builtin::string_concat)),
         );
