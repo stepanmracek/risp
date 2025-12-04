@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::{
     eval::{RuntimeError, evaluate},
     parser::Expr,
@@ -7,6 +5,7 @@ use crate::{
     tokenizer::Token,
     value::{Procedure, Value},
 };
+use std::rc::Rc;
 
 pub fn func_call(func: &Value, params: Vec<Value>) -> Result<Value, RuntimeError> {
     match func {
@@ -70,10 +69,15 @@ pub fn lambda(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeErr
     }
 }
 
+pub enum DefineBehavior {
+    DefineNew,
+    SetValueOfExisting,
+}
+
 pub fn define_variable(
     exprs: &[Rc<Expr>],
     scope: &Rc<Scope>,
-    set: bool,
+    behavior: DefineBehavior,
 ) -> Result<Value, RuntimeError> {
     let symbol = &exprs[0];
 
@@ -81,13 +85,14 @@ pub fn define_variable(
         let rhs_expr = &exprs[1];
         let rhs_val = evaluate(rhs_expr, scope)?;
 
-        if set {
-            Scope::set(scope, symbol, rhs_val)
+        match behavior {
+            DefineBehavior::SetValueOfExisting => Scope::set(scope, symbol, rhs_val)
                 .map(|_| Value::Nil)
-                .map_err(|_| RuntimeError::UnboundVariable(symbol.to_string()))
-        } else {
-            Scope::define(scope, symbol, rhs_val);
-            Ok(Value::Nil)
+                .map_err(|_| RuntimeError::UnboundVariable(symbol.to_string())),
+            DefineBehavior::DefineNew => {
+                Scope::define(scope, symbol, rhs_val);
+                Ok(Value::Nil)
+            }
         }
     } else {
         Err(RuntimeError::IdentifierExpected)
@@ -121,7 +126,7 @@ pub fn define(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeErr
 
     let head = exprs[0].as_ref();
     match head {
-        Expr::Token(_) => define_variable(exprs, scope, false),
+        Expr::Token(_) => define_variable(exprs, scope, DefineBehavior::DefineNew),
         Expr::List(_) => define_procedure(exprs, scope),
     }
 }
@@ -149,4 +154,75 @@ pub fn invoke_lambda(
     let func = evaluate(body, scope)?;
     let params = expr2params(params, scope)?;
     func_call(&func, params)
+}
+
+fn parse_binding(init_expr: &Rc<Expr>) -> Result<[Rc<Expr>; 3], RuntimeError> {
+    let init_expr = match init_expr.as_ref() {
+        Expr::List(init_expr) if init_expr.len() == 3 => init_expr,
+        _ => return Err(RuntimeError::IllFormedSpecialForm),
+    };
+
+    Ok([
+        init_expr[0].clone(),
+        init_expr[1].clone(),
+        init_expr[2].clone(),
+    ])
+}
+
+pub fn do_loop(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
+    // (do ((symbol init value) ...) (test_cond expr1 expr2 ...) expr1 expr2 ...)
+    if exprs.len() < 3 {
+        return Err(RuntimeError::IllFormedSpecialForm);
+    }
+
+    // Vec<(symbol init value)>
+    let init: Vec<_> = match exprs[0].as_ref() {
+        Expr::List(list) => list,
+        _ => {
+            return Err(RuntimeError::IllFormedSpecialForm);
+        }
+    }
+    .iter()
+    .map(parse_binding)
+    .collect::<Result<_, _>>()?;
+
+    let test = match exprs[1].as_ref() {
+        Expr::List(list) if list.len() > 1 => list,
+        _ => {
+            return Err(RuntimeError::IllFormedSpecialForm);
+        }
+    };
+
+    let scope = Scope::nest(scope);
+    let body = &exprs[1..];
+
+    for [symbol, init, _] in init.iter() {
+        define_variable(
+            &[symbol.clone(), init.clone()],
+            &scope,
+            DefineBehavior::DefineNew,
+        )?;
+    }
+
+    loop {
+        let terminate = evaluate(&test[0], &scope)?.truthy();
+        if terminate {
+            let ans = if test.len() > 1 {
+                begin(&test[1..], &scope)?
+            } else {
+                Value::Nil
+            };
+            return Ok(ans);
+        }
+
+        begin(body, &scope)?;
+
+        for [symbol, _, value] in init.iter() {
+            define_variable(
+                &[symbol.clone(), value.clone()],
+                &scope,
+                DefineBehavior::SetValueOfExisting,
+            )?;
+        }
+    }
 }

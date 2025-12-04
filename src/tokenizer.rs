@@ -88,6 +88,8 @@ pub enum Token {
     Begin,
     #[token("define")]
     Define,
+    #[token("do")]
+    Do,
     #[token("set!")]
     Set,
     #[token("lambda")]

@@ -1,12 +1,4 @@
-use crate::{
-    parser::Expr,
-    scope::Scope,
-    special_forms::{
-        begin, define, define_variable, if_statement, invoke_lambda, invoke_named_function, lambda,
-    },
-    tokenizer::Token,
-    value::Value,
-};
+use crate::{parser::Expr, scope::Scope, special_forms::*, tokenizer::Token, value::Value};
 use std::{fmt::Display, rc::Rc};
 
 #[derive(Debug)]
@@ -59,11 +51,15 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
                         // create custom procedure
                         Token::Lambda => lambda(tail, scope),
                         // set value of variable
-                        Token::Set => define_variable(tail, scope, true),
+                        Token::Set => {
+                            define_variable(tail, scope, DefineBehavior::SetValueOfExisting)
+                        }
                         // create new variable
                         Token::Define => define(tail, scope),
                         // invoke procedure or built-in function
                         Token::Symbol(symbol) => invoke_named_function(tail, scope, symbol),
+                        // loop
+                        Token::Do => do_loop(tail, scope),
                         Token::Int(_)
                         | Token::Float(_)
                         | Token::StringLiteral(_)

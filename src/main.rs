@@ -88,8 +88,8 @@ mod test {
     #[test]
     fn built_in_func_call() {
         let src = "(+ 10 10)";
-        let ans = run(src);
-        assert!(matches!(ans, Ok((value::Value::Int(20), _))));
+        let ans = run(src).expect("Ok value expected").0;
+        assert!(matches!(ans, value::Value::Int(20)));
     }
 
     #[test]
@@ -105,22 +105,22 @@ mod test {
     #[test]
     fn call_anonymous_func() {
         let src = "((lambda (a b) (+ a b)) 40 2)";
-        let ans = run(src);
-        assert!(matches!(ans, Ok((value::Value::Int(42), _))));
+        let ans = run(src).expect("Ok value expected").0;
+        assert!(matches!(ans, value::Value::Int(42)));
     }
 
     #[test]
     fn begin() {
         let src = "(begin (define r 10.0) (* pi (* r r)))";
-        let ans = run(src);
-        assert!(matches!(ans, Ok((value::Value::Float(_), _))));
+        let ans = run(src).expect("Ok value expected").0;
+        assert!(matches!(ans, value::Value::Float(_)));
     }
 
     #[test]
     fn if_then_else() {
         let src = "(if (= 0 (+ 1 1)) 42.0 (list 1 2 3))";
-        let ans = run(src);
-        assert!(matches!(ans, Ok((value::Value::List(_), _))));
+        let ans = run(src).expect("Ok value expected").0;
+        assert!(matches!(ans, value::Value::List(_)));
     }
 
     #[test]
@@ -129,8 +129,8 @@ mod test {
             (begin
               (define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))
               (fact 5))";
-        let ans = run(src);
-        assert!(matches!(ans, Ok((value::Value::Int(120), _))));
+        let ans = run(src).expect("Ok value expected").0;
+        assert!(matches!(ans, value::Value::Int(120)));
     }
 
     #[test]
@@ -139,8 +139,8 @@ mod test {
             (begin
               (define (f x y) (+ y x))
               (f 4 2))";
-        let ans = run(src);
-        assert!(matches!(ans, Ok((value::Value::Int(6), _))));
+        let ans = run(src).expect("Ok value expected").0;
+        assert!(matches!(ans, value::Value::Int(6)));
     }
 
     #[test]
@@ -151,11 +151,11 @@ mod test {
               (define (f y) (set! x y))
               (f 2)
               x)";
-        let ans = run(src).expect("Run expected to success");
+        let ans = run(src).expect("Ok value expected").0;
         assert!(
-            matches!(ans.0, value::Value::Int(2)),
+            matches!(ans, value::Value::Int(2)),
             "Value::Int(2) expected, got {:?}",
-            ans.0
+            ans
         );
     }
 
@@ -164,7 +164,7 @@ mod test {
         let examples = [("(+)", 0), ("(*)", 1)];
 
         for (src, expected) in examples {
-            let ans = run(src).unwrap().0;
+            let ans = run(src).expect("Ok value expected").0;
             match ans {
                 value::Value::Int(ans) => assert_eq!(ans, expected),
                 _ => panic!(),
@@ -190,7 +190,7 @@ mod test {
         ];
 
         for (src, expected) in examples {
-            let ans = run(src).unwrap().0;
+            let ans = run(src).expect("Ok value expected").0;
             match ans {
                 value::Value::Float(ans) => assert_eq!(ans, expected, "{}", src),
                 _ => panic!(),
@@ -216,7 +216,7 @@ mod test {
         ];
 
         for (src, expected) in examples {
-            let ans = run(src).unwrap().0;
+            let ans = run(src).expect("Ok value expected").0;
             match ans {
                 value::Value::Int(ans) => assert_eq!(ans, expected, "{}", src),
                 _ => panic!(),
@@ -238,10 +238,10 @@ mod test {
         ];
 
         for src in examples {
-            let ans = run(src);
+            let ans = run(src).expect_err("Err value expected");
             assert!(matches!(
                 ans,
-                Err(Error::Runtime(eval::RuntimeError::DivideByZero))
+                Error::Runtime(eval::RuntimeError::DivideByZero)
             ))
         }
     }
@@ -255,7 +255,7 @@ mod test {
         ];
 
         for (src, expected) in examples {
-            let ans = run(src).unwrap().0;
+            let ans = run(src).expect("Ok value expected").0;
             match ans {
                 value::Value::Int(ans) => assert_eq!(ans, expected, "{}", src),
                 _ => panic!(),
@@ -280,9 +280,9 @@ mod test {
                     ) ; 123
                 ) ; "123"
             ); 3"#;
-        let ans = run(src);
+        let ans = run(src).expect("Ok value expected").0;
         match ans {
-            Ok((value::Value::Int(ans), _)) => assert_eq!(ans, 3),
+            value::Value::Int(ans) => assert_eq!(ans, 3),
             _ => panic!(),
         }
     }
@@ -290,9 +290,9 @@ mod test {
     #[test]
     fn string_eq() {
         let src = "(list (= \"a\" \"b\") (= \"a\" \"a\") (= \"a\"))";
-        let ans = run(src);
+        let ans = run(src).expect("Ok value expected").0;
         match ans {
-            Ok((value::Value::List(list), _)) => {
+            value::Value::List(list) => {
                 assert!(matches!(list[0], value::Value::Bool(false)));
                 assert!(matches!(list[1], value::Value::Bool(true)));
                 assert!(matches!(list[1], value::Value::Bool(true)));
@@ -320,7 +320,7 @@ mod test {
         ];
 
         for (src, expected) in examples {
-            let ans = run(src).unwrap().0;
+            let ans = run(src).expect("Ok value expected").0;
             match ans {
                 value::Value::List(ans) => {
                     let ans = values_to_ints(ans);
@@ -340,7 +340,7 @@ mod test {
         ];
 
         for (src, expected) in examples {
-            let ans = run(src).unwrap().0;
+            let ans = run(src).expect("Ok value expected").0;
             match ans {
                 value::Value::List(ans) => {
                     let ans = values_to_ints(ans);
@@ -353,8 +353,8 @@ mod test {
 
     #[test]
     fn apply() {
-        let ans = run("(apply + (list 1 2 3))");
-        assert!(matches!(ans, Ok((value::Value::Int(6), _))));
+        let ans = run("(apply + (list 1 2 3))").expect("Ok value expected").0;
+        assert!(matches!(ans, value::Value::Int(6)));
     }
 
     #[test]
@@ -363,7 +363,7 @@ mod test {
             (define next (make-generator 10 -3))
             (list (next) (next) (next))
         )")
-        .unwrap()
+        .expect("Ok value expected")
         .0;
         match ans {
             value::Value::List(values) => {
@@ -392,11 +392,34 @@ mod test {
         ];
 
         for (src, expected) in examples {
-            let ans = run(src).unwrap().0;
+            let ans = run(src).expect("Ok value expected").0;
             match ans {
                 value::Value::Bool(ans) => assert_eq!(ans, expected, "{}", src),
                 _ => panic!(),
             }
         }
+    }
+
+    #[test]
+    fn do_loop() {
+        let src = "
+            (begin
+                (define foo 27)
+                (define bar
+                    (list
+                        (do
+                            ((i 0 (+ i 1))) ; for i in (0 1 2 3 4)
+                            ((= i 5) i)     ; returns last tested i (5)
+                            (display i)
+                            (set! foo (+ foo i))
+                        ) ; foo should be now 27 + 0 + 1 + 2 + 3 + 4 = 37
+                        foo
+                    ) ; bar is (5 37)
+                )
+                (apply + bar) ; 37 + 5 = 42
+            )";
+        let ans = run(src).expect("Ok value expected").0;
+        println!("{:?}", ans);
+        assert!(matches!(ans, value::Value::Int(42)));
     }
 }
