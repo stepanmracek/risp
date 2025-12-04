@@ -2,6 +2,7 @@ mod builtin;
 mod eval;
 mod parser;
 mod scope;
+mod special_forms;
 mod tokenizer;
 mod value;
 use std::{fmt::Debug, rc::Rc};

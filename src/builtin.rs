@@ -160,7 +160,7 @@ pub fn pairwise_compare(
     params: &[Value],
     cmp: fn((i64, i64)) -> bool,
 ) -> Result<Value, RuntimeError> {
-    let ops = values_to_ints(&params)?;
+    let ops = values_to_ints(params)?;
     let ans = ops.into_iter().tuple_windows().all(cmp);
     Ok(Value::Bool(ans))
 }
@@ -226,7 +226,7 @@ pub fn map(params: Vec<Value>) -> Result<Value, RuntimeError> {
 
     let ans = zip_vecs(&lists)
         .into_iter()
-        .map(|zipped_params| crate::eval::func_call(&func, zipped_params))
+        .map(|zipped_params| crate::special_forms::func_call(&func, zipped_params))
         .collect::<Result<Vec<_>, RuntimeError>>();
 
     Ok(Value::List(ans?))
@@ -237,7 +237,7 @@ pub fn apply(params: Vec<Value>) -> Result<Value, RuntimeError> {
         .try_into()
         .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
     match params {
-        Value::List(params) => crate::eval::func_call(&func, params),
+        Value::List(params) => crate::special_forms::func_call(&func, params),
         v => Err(RuntimeError::ListExpected(v.clone())),
     }
 }
