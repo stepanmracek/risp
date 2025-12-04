@@ -171,7 +171,7 @@ fn parse_binding(init_expr: &Rc<Expr>) -> Result<[Rc<Expr>; 3], RuntimeError> {
 
 pub fn do_loop(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
     // (do ((symbol init value) ...) (test_cond expr1 expr2 ...) expr1 expr2 ...)
-    if exprs.len() < 3 {
+    if exprs.len() < 2 {
         return Err(RuntimeError::IllFormedSpecialForm);
     }
 
@@ -187,14 +187,14 @@ pub fn do_loop(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeEr
     .collect::<Result<_, _>>()?;
 
     let test = match exprs[1].as_ref() {
-        Expr::List(list) if list.len() > 1 => list,
+        Expr::List(list) if list.len() >= 1 => list,
         _ => {
             return Err(RuntimeError::IllFormedSpecialForm);
         }
     };
 
     let scope = Scope::nest(scope);
-    let body = &exprs[1..];
+    let body = &exprs[2..];
 
     for [symbol, init, _] in init.iter() {
         define_variable(
@@ -215,7 +215,9 @@ pub fn do_loop(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeEr
             return Ok(ans);
         }
 
-        begin(body, &scope)?;
+        if !body.is_empty() {
+            begin(body, &scope)?;
+        }
 
         for [symbol, _, value] in init.iter() {
             define_variable(
