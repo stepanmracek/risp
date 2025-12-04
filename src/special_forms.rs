@@ -16,10 +16,16 @@ pub fn func_call(func: &Value, params: Vec<Value>) -> Result<Value, RuntimeError
 }
 
 pub fn begin(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
-    #[allow(clippy::double_ended_iterator_last)]
-    let last = exprs.iter().map(|arg| evaluate(arg, scope)).last();
+    let last = exprs
+        .iter()
+        .map(|expr| evaluate(expr, scope))
+        .try_fold(None, |_, result| {
+            let value = result?;
+            Ok(Some(value))
+        })?;
+
     if let Some(last) = last {
-        last
+        Ok(last)
     } else {
         Err(RuntimeError::IllFormedSpecialForm)
     }
@@ -27,7 +33,6 @@ pub fn begin(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeErro
 
 pub fn if_statement(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
     if exprs.len() != 3 {
-        // TODO: Scheme also supports just `if (cond) (if_true_expr)` variant
         return Err(RuntimeError::IllFormedSpecialForm);
     }
     let cond = evaluate(&exprs[0], scope)?.truthy();
