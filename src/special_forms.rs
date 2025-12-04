@@ -16,19 +16,14 @@ pub fn func_call(func: &Value, params: Vec<Value>) -> Result<Value, RuntimeError
 }
 
 pub fn begin(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
-    let last = exprs
+    exprs
         .iter()
         .map(|expr| evaluate(expr, scope))
         .try_fold(None, |_, result| {
             let value = result?;
             Ok(Some(value))
-        })?;
-
-    if let Some(last) = last {
-        Ok(last)
-    } else {
-        Err(RuntimeError::IllFormedSpecialForm)
-    }
+        })?
+        .ok_or(RuntimeError::IllFormedSpecialForm)
 }
 
 pub fn if_statement(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
