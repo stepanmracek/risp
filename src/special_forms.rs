@@ -187,7 +187,7 @@ pub fn do_loop(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeEr
     .collect::<Result<_, _>>()?;
 
     let test = match exprs[1].as_ref() {
-        Expr::List(list) if list.len() >= 1 => list,
+        Expr::List(list) if !list.is_empty() => list,
         _ => {
             return Err(RuntimeError::IllFormedSpecialForm);
         }
