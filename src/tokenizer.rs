@@ -98,7 +98,7 @@ pub enum Token {
     If,
     #[regex(r#""([^"\\]|\\.)*""#, parse_string)]
     StringLiteral(Rc<String>),
-    #[regex(r"[\*\+\-/=<>a-zA-Z]+", |lex| String::from_str(lex.slice()))]
+    #[regex(r"[\*\+\-/=<>a-zA-Z\?]+", |lex| String::from_str(lex.slice()))]
     Symbol(String),
     #[regex("-?[0-9]+", |lex| lex.slice().parse())]
     Int(i64),
