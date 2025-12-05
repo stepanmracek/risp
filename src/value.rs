@@ -81,7 +81,7 @@ impl std::fmt::Display for Value {
             Value::Bool(v) => std::fmt::Display::fmt(v, f),
             Value::Int(v) => std::fmt::Display::fmt(v, f),
             Value::Float(v) => std::fmt::Display::fmt(v, f),
-            Value::String(v) => write!(f, "\"{}\"", v.as_ref()),
+            Value::String(v) => std::fmt::Display::fmt(v, f),
             Value::List(l) => {
                 write!(f, "(")?;
                 for (i, v) in l.iter().enumerate() {

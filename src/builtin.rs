@@ -195,12 +195,10 @@ pub fn string_concat(params: Vec<Value>) -> Result<Value, RuntimeError> {
 }
 
 pub fn display(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    if params.len() != 1 {
-        Err(RuntimeError::WrongNumberOfAgumentsPassed)
-    } else {
-        println!("{}", params[0]);
-        Ok(Value::Nil)
+    for param in params {
+        print!("{}", param);
     }
+    Ok(Value::Nil)
 }
 
 fn zip_vecs<T: Clone>(v: &[Vec<T>]) -> Vec<Vec<T>> {
