@@ -85,6 +85,10 @@ impl Scope {
             Value::BuiltIn(BuiltIn::new(builtin::substring)),
         );
         frame.insert(
+            "string-ref".into(),
+            Value::BuiltIn(BuiltIn::new(builtin::string_ref)),
+        );
+        frame.insert(
             "string->int".into(),
             Value::BuiltIn(BuiltIn::new(builtin::parse_int)),
         );

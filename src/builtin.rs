@@ -299,6 +299,28 @@ pub fn substring(params: Vec<Value>) -> Result<Value, RuntimeError> {
     Ok(Value::String(Rc::new(substring.to_string())))
 }
 
+pub fn string_ref(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [string, n] = params
+        .try_into()
+        .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
+
+    let string = match string {
+        Value::String(s) => Ok(s),
+        v => Err(RuntimeError::StringExpected(v)),
+    }?;
+
+    let n = match n {
+        Value::Int(n) => Ok(n),
+        v => Err(RuntimeError::NumberExpected(v)),
+    }?;
+
+    string
+        .chars()
+        .nth(n as usize)
+        .map(|ch| Ok(Value::String(Rc::new(ch.to_string()))))
+        .unwrap_or(Ok(Value::Nil))
+}
+
 pub fn parse_int(params: Vec<Value>) -> Result<Value, RuntimeError> {
     let [string] = values_to_strings(&params)?
         .try_into()

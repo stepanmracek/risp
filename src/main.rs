@@ -289,7 +289,7 @@ mod test {
 
     #[test]
     fn string_eq() {
-        let src = "(list (= \"a\" \"b\") (= \"a\" \"a\") (= \"a\"))";
+        let src = r#"(list (= "a" "b") (= "a" (string-ref "cba" 2)) (= "a"))"#;
         let ans = run(src).expect("Ok value expected").0;
         match ans {
             value::Value::List(list) => {
