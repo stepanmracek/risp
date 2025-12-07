@@ -4,13 +4,11 @@
     (define inputs (map (lambda (s) (list (substring s 0 1) (string->int (substring s 1 -1)))) inputs))
 
     (define (dial direction amount)
-        (begin
-            (if (= direction "R")
-                (set! pos (mod (+ pos amount) 100))
-                (set! pos (mod (- pos amount) 100))
-            )
-            pos
+        (if (= direction "R")
+            (set! pos (mod (+ pos amount) 100))
+            (set! pos (mod (- pos amount) 100))
         )
+        pos
     )
 
     (define positions (map (lambda (input) (apply dial input)) inputs))
