@@ -1,5 +1,5 @@
 use crate::{
-    eval::{RuntimeError, evaluate},
+    eval::{RuntimeError, evaluate_list},
     parser::Expr,
     scope::Scope,
 };
@@ -8,12 +8,12 @@ use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub struct Procedure {
     param_names: Vec<String>,
-    body: Rc<Expr>,
+    body: Vec<Rc<Expr>>,
     scope: Rc<Scope>,
 }
 
 impl Procedure {
-    pub fn new(param_names: Vec<String>, body: Rc<Expr>, scope: Rc<Scope>) -> Self {
+    pub fn new(param_names: Vec<String>, body: Vec<Rc<Expr>>, scope: Rc<Scope>) -> Self {
         Self {
             param_names,
             body,
@@ -34,7 +34,7 @@ impl Procedure {
                 Scope::define(&scope, name, param);
             });
 
-        evaluate(&self.body, &scope)
+        evaluate_list(&self.body, &scope)?.ok_or(RuntimeError::IllFormedExpression)
     }
 }
 

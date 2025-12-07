@@ -137,7 +137,7 @@ mod test {
     fn define_function_shortcut() {
         let src = "
             (begin
-              (define (f x y) (+ y x))
+              (define (f x y) 1 2 3 (+ y x))
               (f 4 2))";
         let ans = run(src).expect("Ok value expected").0;
         assert!(matches!(ans, value::Value::Int(6)));
@@ -148,12 +148,12 @@ mod test {
         let src = "
             (begin
               (define x 1)
-              (define (f y) (set! x y))
+              (define (f y) (set! x (+ x y)) (set! x (+ x y)))
               (f 2)
               x)";
         let ans = run(src).expect("Ok value expected").0;
         assert!(
-            matches!(ans, value::Value::Int(2)),
+            matches!(ans, value::Value::Int(5)),
             "Value::Int(2) expected, got {:?}",
             ans
         );

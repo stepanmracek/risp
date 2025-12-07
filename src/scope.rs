@@ -11,9 +11,11 @@ pub struct Scope {
 }
 
 fn add_procedure(name: &str, param_names: Vec<String>, src: &str, scope: &Rc<Scope>) {
+    // This is internal method only for adding built-in procedures that expects
+    // correct syntax. Therefore we can unwrap results of both tokenization and parsing.
     let tokens = tokenizer::tokenize(src).unwrap();
     let body = Rc::new(parser::parse(tokens.into_iter()).unwrap());
-    let procedure = Value::Procedure(Procedure::new(param_names, body, scope.clone()));
+    let procedure = Value::Procedure(Procedure::new(param_names, vec![body], scope.clone()));
     Scope::define(scope, name, procedure);
 }
 

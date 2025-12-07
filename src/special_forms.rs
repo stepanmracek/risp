@@ -1,5 +1,5 @@
 use crate::{
-    eval::{RuntimeError, evaluate},
+    eval::{RuntimeError, evaluate, evaluate_list},
     parser::Expr,
     scope::Scope,
     tokenizer::Token,
@@ -16,14 +16,7 @@ pub fn func_call(func: &Value, params: Vec<Value>) -> Result<Value, RuntimeError
 }
 
 pub fn begin(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
-    exprs
-        .iter()
-        .map(|expr| evaluate(expr, scope))
-        .try_fold(None, |_, result| {
-            let value = result?;
-            Ok(Some(value))
-        })?
-        .ok_or(RuntimeError::IllFormedSpecialForm)
+    evaluate_list(exprs, scope)?.ok_or(RuntimeError::IllFormedSpecialForm)
 }
 
 pub fn if_statement(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
@@ -38,7 +31,7 @@ pub fn if_statement(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, Runt
     }
 }
 
-fn parser_param_names(params: &[Rc<Expr>]) -> Result<Vec<String>, RuntimeError> {
+fn extract_symbols(params: &[Rc<Expr>]) -> Result<Vec<String>, RuntimeError> {
     params
         .iter()
         .map(|param| match param.as_ref() {
@@ -49,22 +42,22 @@ fn parser_param_names(params: &[Rc<Expr>]) -> Result<Vec<String>, RuntimeError> 
 }
 
 pub fn lambda(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
-    if exprs.len() != 2 {
-        // TODO: this is wrong, if there are multiple expressions after the parameter list,
-        // they should be all executed and last value should be returned (like begin keyword)
+    if exprs.len() < 2 {
         return Err(RuntimeError::IllFormedSpecialForm);
     }
     let params = &exprs[0].as_ref();
-    let body = &exprs[1];
+    let body = exprs.iter().skip(1).cloned().collect();
     if let Expr::List(params) = params {
-        let param_names = parser_param_names(params)?;
+        let param_names = extract_symbols(params)?;
         Ok(Value::Procedure(Procedure::new(
             param_names,
-            body.clone(),
+            body,
             scope.clone(),
         )))
     } else {
-        // TODO: this is wrong, lambda also accepts single symbol as a parameter when it is the only one
+        // lambda also accepts single symbol as a parameter when it is the only one
+        // but I don't intend to implement this variant - I like when there is just
+        // one way to do things
         Err(RuntimeError::IllFormedSpecialForm)
     }
 }
@@ -79,10 +72,11 @@ pub fn define_variable(
     scope: &Rc<Scope>,
     behavior: DefineBehavior,
 ) -> Result<Value, RuntimeError> {
+    // this function is called from define() below where non-emptiness of `exprs` is checked
     let symbol = &exprs[0];
 
     if let Expr::Token(Token::Symbol(symbol)) = symbol.as_ref() {
-        let rhs_expr = &exprs[1];
+        let rhs_expr = exprs.get(1).ok_or(RuntimeError::IllFormedSpecialForm)?;
         let rhs_val = evaluate(rhs_expr, scope)?;
 
         match behavior {
@@ -100,18 +94,22 @@ pub fn define_variable(
 }
 
 fn define_procedure(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
-    let symbol_and_params = &exprs[0].as_ref();
+    // this function is called from define() below where non-emptiness of `exprs` is checked
+    let symbol_and_params = exprs[0].as_ref();
 
     if let Expr::List(symbol_and_params) = symbol_and_params {
-        if symbol_and_params.is_empty() {
-            return Err(RuntimeError::IdentifierExpected);
-        }
-        let symbol_and_params = parser_param_names(symbol_and_params)?;
-        let symbol = symbol_and_params[0].clone();
+        let symbol_and_params = extract_symbols(symbol_and_params)?;
+        let symbol = symbol_and_params
+            .first()
+            .ok_or(RuntimeError::IdentifierExpected)?
+            .clone();
         let param_names = symbol_and_params.into_iter().skip(1).collect();
-        let body = &exprs[1];
+        let body = exprs.iter().skip(1).cloned().collect::<Vec<_>>();
+        if body.is_empty() {
+            return Err(RuntimeError::IllFormedSpecialForm);
+        }
 
-        let procedure = Value::Procedure(Procedure::new(param_names, body.clone(), scope.clone()));
+        let procedure = Value::Procedure(Procedure::new(param_names, body, scope.clone()));
         Scope::define(scope, &symbol, procedure);
         Ok(Value::Nil)
     } else {
@@ -120,14 +118,12 @@ fn define_procedure(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, Runt
 }
 
 pub fn define(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Value, RuntimeError> {
-    if exprs.len() != 2 {
-        return Err(RuntimeError::IllFormedSpecialForm);
-    }
-
-    let head = exprs[0].as_ref();
-    match head {
-        Expr::Token(_) => define_variable(exprs, scope, DefineBehavior::DefineNew),
-        Expr::List(_) => define_procedure(exprs, scope),
+    match exprs.first() {
+        Some(expr) => match expr.as_ref() {
+            Expr::Token(_) => define_variable(exprs, scope, DefineBehavior::DefineNew),
+            Expr::List(_) => define_procedure(exprs, scope),
+        },
+        _ => Err(RuntimeError::IllFormedSpecialForm),
     }
 }
 

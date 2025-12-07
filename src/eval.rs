@@ -75,3 +75,13 @@ pub fn evaluate(expr: &Rc<Expr>, scope: &Rc<Scope>) -> Result<Value, RuntimeErro
         },
     }
 }
+
+pub fn evaluate_list(exprs: &[Rc<Expr>], scope: &Rc<Scope>) -> Result<Option<Value>, RuntimeError> {
+    exprs
+        .iter()
+        .map(|expr| evaluate(expr, scope))
+        .try_fold(None, |_, result| {
+            let value = result?;
+            Ok(Some(value))
+        })
+}
