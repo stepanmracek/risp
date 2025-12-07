@@ -98,10 +98,10 @@ pub enum Token {
     If,
     #[regex(r#""([^"\\]|\\.)*""#, parse_string)]
     StringLiteral(Rc<String>),
-    #[regex(r"[\*\+\-/=<>a-zA-Z\?]+", |lex| String::from_str(lex.slice()))]
-    Symbol(String),
-    #[regex("-?[0-9]+", |lex| lex.slice().parse())]
+    #[regex("-?[0-9]+", |lex| lex.slice().parse(), priority=3)]
     Int(i64),
+    #[regex(r"[\*\+\-/=<>a-zA-Z\?]+[\*\+\-/=<>a-zA-Z\?0-9]*", |lex| String::from_str(lex.slice()))]
+    Symbol(String),
     #[regex("-?([0-9]+[.]([0-9]*)?|[.][0-9]+)", |lex| lex.slice().parse())]
     Float(f64),
     #[regex("#[tf]", parse_bool)]
