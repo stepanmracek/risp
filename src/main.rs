@@ -358,6 +358,24 @@ mod test {
     }
 
     #[test]
+    fn zip() {
+        let src = "(zip (iota 100) (iota 3 5 10))";
+        let ans = run(src).expect("Ok value expected").0;
+        let list = match ans {
+            value::Value::List(list) => list,
+            _ => panic!("list expected"),
+        };
+        let list: Vec<_> = list
+            .into_iter()
+            .map(|inner| match inner {
+                value::Value::List(inner) => values_to_ints(inner),
+                _ => panic!("list expected"),
+            })
+            .collect();
+        assert_eq!(list, [[0, 5], [1, 15], [2, 25]])
+    }
+
+    #[test]
     fn generator() {
         let ans = run("(begin
             (define next (make-generator 10 -3))

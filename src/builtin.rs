@@ -33,7 +33,7 @@ fn values_to_strings(params: &[Value]) -> Result<Vec<Rc<String>>, RuntimeError> 
         .collect()
 }
 
-fn values_to_bool(params: &[Value]) -> Result<Vec<bool>, RuntimeError> {
+fn values_to_bools(params: &[Value]) -> Result<Vec<bool>, RuntimeError> {
     params
         .iter()
         .map(|param| match param {
@@ -41,6 +41,15 @@ fn values_to_bool(params: &[Value]) -> Result<Vec<bool>, RuntimeError> {
             _ => Err(RuntimeError::BooleanExpected(param.clone())),
         })
         .collect()
+}
+
+fn values_to_vecs(params: impl Iterator<Item = Value>) -> Result<Vec<Vec<Value>>, RuntimeError> {
+    params
+        .map(|p| match p {
+            Value::List(l) => Ok(l),
+            v => Err(RuntimeError::ListExpected(v)),
+        })
+        .collect::<Result<Vec<_>, RuntimeError>>()
 }
 
 pub fn op_add(params: Vec<Value>) -> Result<Value, RuntimeError> {
@@ -169,6 +178,19 @@ pub fn list(params: Vec<Value>) -> Result<Value, RuntimeError> {
     Ok(Value::List(params))
 }
 
+pub fn iota(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let params = values_to_ints(&params)?;
+    let ans: Box<dyn Iterator<Item = i64>> = match params.as_slice() {
+        [count] => Box::new(0..*count),
+        [count, start] => Box::new(*start..*count + *start),
+        [count, start, step] => {
+            Box::new((*start..(*count * *step) + *start).step_by(*step as usize))
+        }
+        _ => return Err(RuntimeError::WrongNumberOfAgumentsPassed),
+    };
+    Ok(Value::List(ans.map(|v| Value::Int(v)).collect()))
+}
+
 pub fn append(params: Vec<Value>) -> Result<Value, RuntimeError> {
     let vals: Result<Vec<Value>, RuntimeError> = params
         .into_iter()
@@ -201,11 +223,9 @@ pub fn display(params: Vec<Value>) -> Result<Value, RuntimeError> {
     Ok(Value::Nil)
 }
 
-fn zip_vecs<T: Clone>(v: &[Vec<T>]) -> Vec<Vec<T>> {
+fn zip_vecs<T: Clone>(v: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> {
     let min_len = v.iter().map(|x| x.len()).min().unwrap_or(0);
-    (0..min_len)
-        .map(|i| v.iter().map(|row| row[i].clone()).collect())
-        .collect()
+    (0..min_len).map(|i| v.iter().map(|row| row[i].clone()).collect())
 }
 
 pub fn map(params: Vec<Value>) -> Result<Value, RuntimeError> {
@@ -215,15 +235,9 @@ pub fn map(params: Vec<Value>) -> Result<Value, RuntimeError> {
 
     let mut params = params.into_iter();
     let func = params.next().unwrap();
-    let lists = params
-        .map(|p| match p {
-            Value::List(l) => Ok(l),
-            v => Err(RuntimeError::ListExpected(v)),
-        })
-        .collect::<Result<Vec<_>, RuntimeError>>()?;
+    let lists = values_to_vecs(params)?;
 
     let ans = zip_vecs(&lists)
-        .into_iter()
         .map(|zipped_params| crate::special_forms::func_call(&func, zipped_params))
         .collect::<Result<Vec<_>, RuntimeError>>();
 
@@ -238,6 +252,12 @@ pub fn apply(params: Vec<Value>) -> Result<Value, RuntimeError> {
         Value::List(params) => crate::special_forms::func_call(&func, params),
         v => Err(RuntimeError::ListExpected(v.clone())),
     }
+}
+
+pub fn zip(params: Vec<Value>) -> Result<Value, RuntimeError> {
+    let lists = values_to_vecs(params.into_iter())?;
+    let zipped = zip_vecs(&lists).map(|i| Value::List(i)).collect();
+    Ok(Value::List(zipped))
 }
 
 pub fn read_file(params: Vec<Value>) -> Result<Value, RuntimeError> {
@@ -359,17 +379,17 @@ pub fn length(params: Vec<Value>) -> Result<Value, RuntimeError> {
 }
 
 pub fn and(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    let params = values_to_bool(&params)?;
+    let params = values_to_bools(&params)?;
     Ok(Value::Bool(params.into_iter().all(|v| v)))
 }
 
 pub fn or(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    let params = values_to_bool(&params)?;
+    let params = values_to_bools(&params)?;
     Ok(Value::Bool(params.into_iter().any(|v| v)))
 }
 
 pub fn not(params: Vec<Value>) -> Result<Value, RuntimeError> {
-    let [param] = values_to_bool(&params)?
+    let [param] = values_to_bools(&params)?
         .try_into()
         .map_err(|_| RuntimeError::WrongNumberOfAgumentsPassed)?;
     Ok(Value::Bool(!param))

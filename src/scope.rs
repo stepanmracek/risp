@@ -1,5 +1,7 @@
 use crate::{
-    builtin, parser, tokenizer,
+    builtin,
+    eval::RuntimeError,
+    parser, tokenizer,
     value::{BuiltIn, Procedure, Value},
 };
 use std::{cell::RefCell, collections::HashMap, f64::consts::PI, rc::Rc};
@@ -19,89 +21,56 @@ fn add_procedure(name: &str, param_names: Vec<String>, src: &str, scope: &Rc<Sco
     Scope::define(scope, name, procedure);
 }
 
+fn add_built_in(
+    frame: &mut HashMap<String, Value>,
+    symbol: &str,
+    func: fn(Vec<Value>) -> Result<Value, RuntimeError>,
+) {
+    frame.insert(symbol.to_string(), Value::BuiltIn(BuiltIn::new(func)));
+}
+
 impl Scope {
     pub fn global() -> Rc<Self> {
         let mut frame = HashMap::new();
-        frame.insert("+".into(), Value::BuiltIn(BuiltIn::new(builtin::op_add)));
-        frame.insert("-".into(), Value::BuiltIn(BuiltIn::new(builtin::op_sub)));
-        frame.insert("*".into(), Value::BuiltIn(BuiltIn::new(builtin::op_mul)));
-        frame.insert("/".into(), Value::BuiltIn(BuiltIn::new(builtin::op_div)));
-        frame.insert("and".into(), Value::BuiltIn(BuiltIn::new(builtin::and)));
-        frame.insert("or".into(), Value::BuiltIn(BuiltIn::new(builtin::or)));
-        frame.insert("not".into(), Value::BuiltIn(BuiltIn::new(builtin::not)));
-        frame.insert("mod".into(), Value::BuiltIn(BuiltIn::new(builtin::modulo)));
-        frame.insert("=".into(), Value::BuiltIn(BuiltIn::new(builtin::op_eq)));
-        frame.insert(
-            "<=".into(),
-            Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(&params, |(a, b)| a <= b)
-            })),
-        );
-        frame.insert(
-            "<".into(),
-            Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(&params, |(a, b)| a < b)
-            })),
-        );
-        frame.insert(
-            ">=".into(),
-            Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(&params, |(a, b)| a >= b)
-            })),
-        );
-        frame.insert(
-            ">".into(),
-            Value::BuiltIn(BuiltIn::new(|params| {
-                builtin::pairwise_compare(&params, |(a, b)| a > b)
-            })),
-        );
-        frame.insert("list".into(), Value::BuiltIn(BuiltIn::new(builtin::list)));
-        frame.insert(
-            "append".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::append)),
-        );
-        frame.insert(
-            "string-concatenate".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::string_concat)),
-        );
-        frame.insert(
-            "display".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::display)),
-        );
-        frame.insert("map".into(), Value::BuiltIn(BuiltIn::new(builtin::map)));
-        frame.insert("apply".into(), Value::BuiltIn(BuiltIn::new(builtin::apply)));
-        frame.insert(
-            "read-file".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::read_file)),
-        );
-        frame.insert(
-            "split-string".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::split_string)),
-        );
-        frame.insert(
-            "split-string-with".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::split_string_with)),
-        );
-        frame.insert(
-            "substring".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::substring)),
-        );
-        frame.insert(
-            "string-ref".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::string_ref)),
-        );
-        frame.insert(
-            "string->int".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::parse_int)),
-        );
-        frame.insert(
-            "->string".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::to_string)),
-        );
-        frame.insert(
-            "length".into(),
-            Value::BuiltIn(BuiltIn::new(builtin::length)),
-        );
+        add_built_in(&mut frame, "+", builtin::op_add);
+        add_built_in(&mut frame, "-", builtin::op_sub);
+        add_built_in(&mut frame, "*", builtin::op_mul);
+        add_built_in(&mut frame, "/", builtin::op_div);
+        add_built_in(&mut frame, "and", builtin::and);
+        add_built_in(&mut frame, "or", builtin::or);
+        add_built_in(&mut frame, "not", builtin::not);
+        add_built_in(&mut frame, "mod", builtin::modulo);
+        add_built_in(&mut frame, "=", builtin::op_eq);
+
+        add_built_in(&mut frame, "<=", |params| {
+            builtin::pairwise_compare(&params, |(a, b)| a <= b)
+        });
+        add_built_in(&mut frame, "<", |params| {
+            builtin::pairwise_compare(&params, |(a, b)| a < b)
+        });
+        add_built_in(&mut frame, ">=", |params| {
+            builtin::pairwise_compare(&params, |(a, b)| a >= b)
+        });
+        add_built_in(&mut frame, ">", |params| {
+            builtin::pairwise_compare(&params, |(a, b)| a > b)
+        });
+
+        add_built_in(&mut frame, "list", builtin::list);
+        add_built_in(&mut frame, "iota", builtin::iota);
+        add_built_in(&mut frame, "zip", builtin::zip);
+        add_built_in(&mut frame, "append", builtin::append);
+        add_built_in(&mut frame, "string-concatenate", builtin::string_concat);
+        add_built_in(&mut frame, "display", builtin::display);
+        add_built_in(&mut frame, "map", builtin::map);
+        add_built_in(&mut frame, "apply", builtin::apply);
+        add_built_in(&mut frame, "read-file", builtin::read_file);
+        add_built_in(&mut frame, "split-string", builtin::split_string);
+        add_built_in(&mut frame, "split-string-with", builtin::split_string_with);
+        add_built_in(&mut frame, "substring", builtin::substring);
+        add_built_in(&mut frame, "string-ref", builtin::string_ref);
+        add_built_in(&mut frame, "string->int", builtin::parse_int);
+        add_built_in(&mut frame, "->string", builtin::to_string);
+        add_built_in(&mut frame, "length", builtin::length);
         frame.insert("pi".into(), Value::Float(PI));
 
         let scope = Rc::new(Self {
